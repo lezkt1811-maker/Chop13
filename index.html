@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chopped & Screwed Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darker: '#09090b',
+                        card: '#121216',
+                        accent: '#a855f7',
+                        accentGlow: 'rgba(168, 85, 247, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #09090b;
+            color: #f4f4f5;
+        }
+        input[type=range] {
+            accent-color: #a855f7;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-purple-500 selection:text-white">
+
+    <!-- Top Navigation -->
+    <header class="border-b border-zinc-800 bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-purple-900/30">
+                    <i class="fa-solid fa-compact-disc text-white text-lg animate-spin" style="animation-duration: 8s;"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                        CHOPPED & SCREWED <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium border border-purple-500/30">H-TOWN EDITION</span>
+                    </h1>
+                    <p class="text-xs text-zinc-400 hidden sm:block">Client-side pitch, bass & stutter studio</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="helpBtn" class="text-zinc-400 hover:text-white px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-900 border border-zinc-800 transition">
+                    <i class="fa-solid fa-circle-question mr-1"></i> Guide
+                </button>
+                <label class="cursor-pointer bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-cloud-arrow-up text-purple-400"></i>
+                    <span>Upload Audio</span>
+                    <input type="file" id="audioUpload" accept="audio/*" class="hidden">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left & Center -->
+        <div class="lg:col-span-2 space-y-6 flex flex-col">
+
+            <!-- Visualizer Card -->
+            <div class="bg-card border border-zinc-800/80 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between flex-1 min-h-[280px]">
+                <div class="absolute inset-0 bg-gradient-to-t from-purple-950/10 via-transparent to-transparent pointer-events-none"></div>
+
+                <div class="flex items-center justify-between z-10 mb-4">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-2.5 h-2.5 rounded-full bg-zinc-500 shrink-0" id="statusDot"></span>
+                        <span class="text-xs font-bold tracking-wider text-zinc-400 uppercase truncate" id="trackNameDisplay">Demo Beat (Synthesized Loop)</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-zinc-400 font-mono shrink-0">
+                        <span id="currentTime">00:00</span> / <span id="durationTime">00:00</span>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-40 sm:h-52 bg-zinc-950/80 rounded-xl overflow-hidden border border-zinc-800 flex items-center justify-center my-2">
+                    <canvas id="visualizerCanvas" class="w-full h-full"></canvas>
+                </div>
+
+                <div class="mt-2">
+                    <input type="range" id="seekSlider" min="0" max="100" value="0" step="0.1" class="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Transport & Chop Pad -->
+            <div class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-play text-purple-400"></i> Transport
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <button id="playBtn" class="flex-1 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white py-3 px-4 rounded-xl font-semibold shadow-lg shadow-purple-900/40 flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-play" id="playIcon"></i> <span id="playText">Play</span>
+                        </button>
+                        <button id="stopBtn" class="bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 border border-zinc-700/60 py-3 px-4 rounded-xl font-semibold transition flex items-center justify-center">
+                            <i class="fa-solid fa-stop"></i>
+                        </button>
+                        <button id="loadDemoBtn" class="bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 border border-zinc-700/60 py-3 px-4 rounded-xl font-semibold transition text-xs flex items-center justify-center gap-1.5" title="Load Default Demo Beat">
+                            <i class="fa-solid fa-rotate-right"></i> Demo
+                        </button>
+                    </div>
+
+                    <div class="pt-2">
+                        <button id="tapeStopBtn" class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 active:scale-98 text-zinc-200 py-2.5 px-4 rounded-xl font-medium text-xs transition flex items-center justify-center gap-2 group">
+                            <i class="fa-solid fa-record-vinyl text-purple-400 group-hover:rotate-180 transition duration-500"></i>
+                            <span>Vinyl Tape Stop Effect</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5 mb-1">
+                            <i class="fa-solid fa-scissors text-purple-400"></i> Signature Chop Pad
+                        </h3>
+                        <p class="text-xs text-zinc-400">Hold to stutter a short slice at the playhead</p>
+                    </div>
+                    <div>
+                        <button id="chopPad" class="w-full h-20 bg-gradient-to-r from-purple-900/60 via-indigo-900/60 to-purple-900/60 hover:from-purple-800/80 hover:to-indigo-800/80 border-2 border-purple-500/50 active:scale-95 rounded-2xl flex flex-col items-center justify-center shadow-lg shadow-purple-950/50 transition cursor-pointer select-none">
+                            <i class="fa-solid fa-fingerprint text-purple-300 text-xl mb-1"></i>
+                            <span class="font-bold text-white text-sm tracking-widest uppercase">CHOP / STUTTER</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-6 flex flex-col">
+
+            <!-- Find & Import Songs -->
+            <div class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-magnifying-glass text-purple-400"></i> Find & Import Songs
+                </h3>
+                <p class="text-xs text-zinc-400 leading-relaxed">
+                    Search the free Jamendo catalog of Creative Commons tracks, then import one into the studio.
+                </p>
+
+                <form id="searchForm" class="flex gap-2">
+                    <input id="searchInput" type="text" placeholder="Song or artist name" autocomplete="off"
+                        class="flex-1 min-w-0 bg-zinc-950 border border-zinc-700/60 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500">
+                    <button type="submit" id="searchBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition shrink-0">Search</button>
+                </form>
+
+                <details id="keyBox" class="text-xs text-zinc-400">
+                    <summary class="cursor-pointer hover:text-zinc-200">Jamendo client ID (required once)</summary>
+                    <div class="pt-2 space-y-2">
+                        <div class="flex gap-2">
+                            <input id="clientIdInput" type="password" placeholder="Paste client ID" autocomplete="off"
+                                class="flex-1 min-w-0 bg-zinc-950 border border-zinc-700/60 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500">
+                            <button id="saveKeyBtn" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-200 px-3 py-2 rounded-lg text-xs font-semibold transition shrink-0">Save</button>
+                        </div>
+                        <p>Get a free client ID at devportal.jamendo.com. It's stored only in this browser.</p>
+                    </div>
+                </details>
+
+                <div id="searchStatus" class="text-xs text-zinc-400 min-h-[1rem]"></div>
+                <ul id="searchResults" class="space-y-2 max-h-72 overflow-y-auto pr-1"></ul>
+            </div>
+
+            <!-- Screwed Audio FX Panel -->
+            <div class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl space-y-6 flex-1">
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-purple-400"></i> Screwed FX Rack
+                    </h3>
+                    <button id="resetFxBtn" class="text-xs text-zinc-500 hover:text-zinc-300 transition">Reset Default</button>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-zinc-200">Pitch & Speed (Screwed)</span>
+                        <span id="speedVal" class="font-mono text-xs text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/50">0.82x</span>
+                    </div>
+                    <input type="range" id="speedSlider" min="0.5" max="1.2" value="0.82" step="0.01" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-zinc-500 font-mono">
+                        <span>0.5x (Super Screwed)</span>
+                        <span>1.0x (Normal)</span>
+                        <span>1.2x</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-zinc-200">Deep Bass Boost (80Hz)</span>
+                        <span id="bassVal" class="font-mono text-xs text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/50">+8.0 dB</span>
+                    </div>
+                    <input type="range" id="bassSlider" min="0" max="15" value="8" step="0.5" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-zinc-500 font-mono">
+                        <span>0 dB (Flat)</span>
+                        <span>+7.5 dB</span>
+                        <span>+15 dB (Heavy)</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-zinc-200">Space Echo / Reverb</span>
+                        <span id="reverbVal" class="font-mono text-xs text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/50">25%</span>
+                    </div>
+                    <input type="range" id="reverbSlider" min="0" max="1" value="0.25" step="0.05" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-zinc-200">Low-Pass Filter (Muffle)</span>
+                        <span id="filterVal" class="font-mono text-xs text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/50">12000 Hz</span>
+                    </div>
+                    <input type="range" id="filterSlider" min="500" max="20000" value="12000" step="100" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+            </div>
+
+            <!-- Export Section -->
+            <div class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-download text-purple-400"></i> Render & Export
+                </h3>
+                <p class="text-xs text-zinc-400 leading-relaxed">
+                    Render your current screwed mix offline via <code class="text-purple-400 bg-zinc-900 px-1 py-0.5 rounded">OfflineAudioContext</code> and download the WAV file.
+                </p>
+                <button id="exportBtn" class="w-full bg-zinc-900 hover:bg-zinc-800 active:scale-98 text-zinc-200 border border-zinc-700/60 py-3 px-4 rounded-xl font-semibold text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-file-arrow-down text-purple-400" id="exportIcon"></i>
+                    <span id="exportText">Export Screwed Audio (WAV)</span>
+                </button>
+                <div id="exportProgressContainer" class="hidden space-y-1.5">
+                    <div class="flex justify-between text-[10px] font-mono text-zinc-400">
+                        <span id="exportStatusText">Rendering audio...</span>
+                        <span id="exportPercent">0%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div id="exportProgressBar" class="h-full bg-purple-500 w-0 transition-all duration-200"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-4 relative shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h2 class="font-bold text-white text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-purple-400"></i> How to Use
+                </h2>
+                <button id="closeHelp" class="text-zinc-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs text-zinc-300 leading-relaxed">
+                <p><strong class="text-purple-400">1. Audio Source:</strong> The app starts with a built-in demo beat. Search for a song in <em>Find & Import Songs</em> and click Import, or upload your own MP3/WAV with the top-right button.</p>
+                <p><strong class="text-purple-400">2. Screwed Speed & Pitch:</strong> Drag the pitch/speed slider down between 0.75x and 0.85x for the slowed-down H-Town vibe.</p>
+                <p><strong class="text-purple-400">3. Bass Boost:</strong> Pump the sub frequencies around 80Hz with the bass slider.</p>
+                <p><strong class="text-purple-400">4. Chopped Stutter Pad:</strong> Hold the chop pad during playback to repeat a short slice at the playhead.</p>
+                <p><strong class="text-purple-400">5. Vinyl Stop:</strong> Click the vinyl tape stop button for a turntable power-off effect.</p>
+            </div>
+            <div class="pt-2">
+                <button id="closeHelpBtn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2.5 rounded-xl text-xs transition">Got it, let's make music</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-zinc-800 bg-zinc-950 py-4 text-center text-xs text-zinc-500">
+        <p>Built with Tailwind CSS, Tone.js & Web Audio API. Runs entirely in your browser.</p>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-zinc-900 border border-zinc-700 text-zinc-200 px-4 py-3 rounded-xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3">
+        <i class="fa-solid fa-circle-info text-purple-400"></i>
+        <span id="toastMsg" class="text-xs font-medium">Notification message</span>
+    </div>
+
+    <script>
+        // ---------- Global state ----------
+        let audioBuffer = null;     // source audio (demo, search import, or upload)
+        let playerBuffer = null;    // the buffer the current Tone.Player was built from
+        let player = null;
+        let lowShelfEQ = null, lowPassFilter = null, reverb = null, gainNode = null, analyser = null;
+        let isPlaying = false;
+        let playOffset = 0;         // track position (s) when playback last (re)anchored
+        let playStartCtx = 0;       // Tone.now() at that anchor
+        let chopTimer = null, chopAnchor = 0, chopStartedAt = 0;
+        let searchResults = [];
+
+        const JAMENDO_KEY = 'cs_jamendo_client_id';
+
+        // ---------- DOM ----------
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const stopBtn = document.getElementById('stopBtn');
+        const loadDemoBtn = document.getElementById('loadDemoBtn');
+        const audioUpload = document.getElementById('audioUpload');
+        const trackNameDisplay = document.getElementById('trackNameDisplay');
+        const statusDot = document.getElementById('statusDot');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationTimeEl = document.getElementById('durationTime');
+        const seekSlider = document.getElementById('seekSlider');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedVal = document.getElementById('speedVal');
+        const bassSlider = document.getElementById('bassSlider');
+        const bassVal = document.getElementById('bassVal');
+        const reverbSlider = document.getElementById('reverbSlider');
+        const reverbVal = document.getElementById('reverbVal');
+        const filterSlider = document.getElementById('filterSlider');
+        const filterVal = document.getElementById('filterVal');
+        const resetFxBtn = document.getElementById('resetFxBtn');
+        const chopPad = document.getElementById('chopPad');
+        const tapeStopBtn = document.getElementById('tapeStopBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const exportIcon = document.getElementById('exportIcon');
+        const exportText = document.getElementById('exportText');
+        const exportProgressContainer = document.getElementById('exportProgressContainer');
+        const exportProgressBar = document.getElementById('exportProgressBar');
+        const exportStatusText = document.getElementById('exportStatusText');
+        const exportPercent = document.getElementById('exportPercent');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelp = document.getElementById('closeHelp');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchStatus = document.getElementById('searchStatus');
+        const searchResultsEl = document.getElementById('searchResults');
+        const keyBox = document.getElementById('keyBox');
+        const clientIdInput = document.getElementById('clientIdInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+
+        // ---------- Helpers ----------
+        function showToast(message) {
+            toastMsg.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(showToast._t);
+            showToast._t = setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function setStatusDot(playing) {
+            statusDot.className = playing
+                ? 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0'
+                : 'w-2.5 h-2.5 rounded-full bg-zinc-500 shrink-0';
+        }
+
+        function setPlayUi(playing) {
+            playIcon.className = playing ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+            playText.textContent = playing ? 'Pause' : 'Play';
+            setStatusDot(playing);
+        }
+
+        function currentPos() {
+            if (!audioBuffer) return 0;
+            if (!isPlaying || !player) return playOffset;
+            const rate = player.playbackRate || 1;
+            return (playOffset + (Tone.now() - playStartCtx) * rate) % audioBuffer.duration;
+        }
+
+        // Re-anchor the playhead before the rate changes so position stays correct.
+        function rebasePosition() {
+            playOffset = currentPos();
+            playStartCtx = Tone.now();
+        }
+
+        // ---------- Audio chain (built once) ----------
+        async function ensureAudioChain() {
+            await Tone.start();
+            if (lowShelfEQ) return;
+            lowShelfEQ = new Tone.EQ3({ low: parseFloat(bassSlider.value), mid: 0, high: 0, lowFrequency: 80 });
+            lowPassFilter = new Tone.Filter({ frequency: parseFloat(filterSlider.value), type: 'lowpass' });
+            reverb = new Tone.Reverb({ decay: 3.5, wet: parseFloat(reverbSlider.value) });
+            await reverb.generate();
+            analyser = new Tone.Analyser('waveform', 1024);
+            gainNode = new Tone.Gain(0.9);
+            // Player -> EQ -> LowPass -> Reverb -> Analyser -> Gain -> Out
+            lowShelfEQ.connect(lowPassFilter);
+            lowPassFilter.connect(reverb);
+            reverb.connect(analyser);
+            analyser.connect(gainNode);
+            gainNode.toDestination();
+        }
+
+        // Make sure the chain exists and the player is built from the current audioBuffer.
+        async function ensureReady() {
+            await ensureAudioChain();
+            if (player && playerBuffer === audioBuffer) return;
+            if (player) { player.stop(); player.dispose(); }
+            player = new Tone.Player({
+                url: audioBuffer,
+                loop: true,
+                playbackRate: parseFloat(speedSlider.value),
+                autostart: false
+            });
+            player.connect(lowShelfEQ);
+            playerBuffer = audioBuffer;
+            isPlaying = false;
+            playOffset = 0;
+            setPlayUi(false);
+            durationTimeEl.textContent = formatTime(audioBuffer.duration);
+            seekSlider.max = audioBuffer.duration;
+            seekSlider.value = 0;
+            currentTimeEl.textContent = '00:00';
+        }
+
+        function startPlayback(offset) {
+            player.start(0, offset);
+            playOffset = offset;
+            playStartCtx = Tone.now();
+            isPlaying = true;
+            setPlayUi(true);
+        }
+
+        function pausePlayback() {
+            if (!player) return;
+            playOffset = currentPos();
+            player.stop();
+            isPlaying = false;
+            setPlayUi(false);
+        }
+
+        function stopPlayback() {
+            if (player) player.stop();
+            isPlaying = false;
+            playOffset = 0;
+            seekSlider.value = 0;
+            currentTimeEl.textContent = '00:00';
+            setPlayUi(false);
+        }
+
+        // ---------- Demo beat ----------
+        async function createDemoBuffer() {
+            const buffer = await Tone.Offline(() => {
+                const synth = new Tone.MembraneSynth({
+                    pitchDecay: 0.05,
+                    octaves: 4,
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.001, decay: 0.8, sustain: 0.01, release: 0.4 }
+                }).toDestination();
+                const snare = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: { attack: 0.005, decay: 0.2, sustain: 0 }
+                }).toDestination();
+                new Tone.Sequence((time, note) => {
+                    synth.triggerAttackRelease(note, '8n', time);
+                }, ['C2', null, 'G1', 'C2', 'C2', 'G1', 'C2', 'D#2'], '8n').start(0);
+                new Tone.Sequence((time, hit) => {
+                    if (hit) snare.triggerAttackRelease('8n', time);
+                }, [false, true, false, true, false, true, false, true], '8n').start(0);
+            }, 8);
+            audioBuffer = buffer;
+            trackNameDisplay.textContent = 'Demo Beat (Synthesized Loop)';
+        }
+
+        // ---------- Visualizer ----------
+        const canvas = visualizerCanvas;
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (isPlaying && audioBuffer) {
+                const pos = currentPos();
+                seekSlider.value = pos;
+                currentTimeEl.textContent = formatTime(pos);
+            }
+
+            if (!analyser || !isPlaying) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#27272a';
+                ctx.beginPath();
+                ctx.moveTo(0, canvas.height / 2);
+                ctx.lineTo(canvas.width, canvas.height / 2);
+                ctx.stroke();
+                return;
+            }
+
+            const values = analyser.getValue();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = '#a855f7';
+            ctx.beginPath();
+            const sliceWidth = canvas.width / values.length;
+            let x = 0;
+            for (let i = 0; i < values.length; i++) {
+                const y = (values[i] * canvas.height / 2) + (canvas.height / 2);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+        }
+
+        // ---------- Transport ----------
+        playBtn.addEventListener('click', async () => {
+            if (!audioBuffer) return;
+            await ensureReady();
+            if (isPlaying) {
+                pausePlayback();
+                showToast('Playback paused');
+            } else {
+                startPlayback(parseFloat(seekSlider.value) || 0);
+                showToast('Playing chopped & screwed stream');
+            }
+        });
+
+        stopBtn.addEventListener('click', stopPlayback);
+
+        loadDemoBtn.addEventListener('click', async () => {
+            stopPlayback();
+            await createDemoBuffer();
+            showToast('Demo loop loaded');
+        });
+
+        seekSlider.addEventListener('input', (e) => {
+            const t = parseFloat(e.target.value);
+            currentTimeEl.textContent = formatTime(t);
+            if (player && isPlaying) {
+                player.stop();
+                player.start(0, t);
+                playOffset = t;
+                playStartCtx = Tone.now();
+            }
+        });
+
+        // ---------- Upload ----------
+        audioUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            showToast(`Loading "${file.name}"...`);
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                await ensureAudioChain();
+                audioBuffer = await Tone.getContext().rawContext.decodeAudioData(arrayBuffer);
+                trackNameDisplay.textContent = file.name;
+                stopPlayback();
+                showToast('Audio loaded');
+            } catch (err) {
+                console.error(err);
+                showToast('Could not read that audio file');
+            }
+            audioUpload.value = '';
+        });
+
+        // ---------- Find & import songs (Jamendo) ----------
+        function getSavedClientId() {
+            try { return localStorage.getItem(JAMENDO_KEY) || ''; } catch (e) { return ''; }
+        }
+        function saveClientId(value) {
+            try { localStorage.setItem(JAMENDO_KEY, value); } catch (e) { /* storage blocked */ }
+        }
+
+        function setSearchStatus(text) {
+            searchStatus.textContent = text;
+        }
+
+        function fmtDuration(sec) {
+            return formatTime(Number(sec) || 0);
+        }
+
+        function renderResults(tracks) {
+            searchResultsEl.innerHTML = '';
+            if (!tracks.length) {
+                setSearchStatus('No tracks found. Try a different name.');
+                return;
+            }
+            tracks.forEach((track, i) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between gap-3 bg-zinc-950/60 border border-zinc-800 rounded-lg px-3 py-2';
+
+                const info = document.createElement('div');
+                info.className = 'min-w-0';
+                const title = document.createElement('div');
+                title.className = 'text-xs font-semibold text-zinc-200 truncate';
+                title.textContent = track.name || 'Untitled';
+                const meta = document.createElement('div');
+                meta.className = 'text-[10px] text-zinc-500 font-mono truncate';
+                meta.textContent = `${track.artist_name || 'Unknown artist'} · ${fmtDuration(track.duration)}`;
+                info.append(title, meta);
+
+                const btn = document.createElement('button');
+                btn.className = 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0';
+                btn.textContent = 'Import';
+                btn.addEventListener('click', () => importTrack(searchResults[i], btn));
+
+                li.append(info, btn);
+                searchResultsEl.appendChild(li);
+            });
+            setSearchStatus(`${tracks.length} result${tracks.length === 1 ? '' : 's'}. Click Import to load one.`);
+        }
+
+        async function searchSongs(query) {
+            const clientId = clientIdInput.value.trim() || getSavedClientId();
+            if (!clientId) {
+                setSearchStatus('Add your free Jamendo client ID first (below).');
+                keyBox.open = true;
+                return;
+            }
+            setSearchStatus('Searching...');
+            searchResultsEl.innerHTML = '';
+            const url = 'https://api.jamendo.com/v3.0/tracks/?' + new URLSearchParams({
+                client_id: clientId,
+                format: 'json',
+                limit: '10',
+                namesearch: query,
+                audioformat: 'mp32',
+                include: 'musicinfo'
+            });
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok || (data.headers && data.headers.status !== 'success')) {
+                    throw new Error((data.headers && data.headers.error_message) || `HTTP ${res.status}`);
+                }
+                searchResults = data.results || [];
+                renderResults(searchResults);
+            } catch (err) {
+                console.error(err);
+                setSearchStatus(`Search failed: ${err.message}. Check your client ID.`);
+            }
+        }
+
+        async function importTrack(track, btn) {
+            if (!track) return;
+            const src = track.audio || track.audiodownload;
+            if (!src) {
+                showToast('This track has no playable audio');
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            showToast(`Importing "${track.name}"...`);
+            try {
+                const res = await fetch(src);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const arrayBuffer = await res.arrayBuffer();
+                await ensureAudioChain();
+                audioBuffer = await Tone.getContext().rawContext.decodeAudioData(arrayBuffer);
+                trackNameDisplay.textContent = `${track.artist_name || 'Unknown'} — ${track.name}`;
+                stopPlayback();
+                showToast('Track imported. Press Play.');
+            } catch (err) {
+                console.error(err);
+                showToast(`Import failed: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Import';
+            }
+        }
+
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const q = searchInput.value.trim();
+            if (q) searchSongs(q);
+        });
+
+        saveKeyBtn.addEventListener('click', () => {
+            const v = clientIdInput.value.trim();
+            if (!v) return showToast('Paste a client ID first');
+            saveClientId(v);
+            clientIdInput.value = '';
+            keyBox.open = false;
+            showToast('Client ID saved in this browser');
+        });
+
+        // ---------- FX controls ----------
+        speedSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            speedVal.textContent = val.toFixed(2) + 'x';
+            if (player) {
+                rebasePosition();
+                player.playbackRate = val;
+            }
+        });
+
+        bassSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            bassVal.textContent = `+${val.toFixed(1)} dB`;
+            if (lowShelfEQ) lowShelfEQ.low.value = val;
+        });
+
+        reverbSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            reverbVal.textContent = `${Math.round(val * 100)}%`;
+            if (reverb) reverb.wet.value = val;
+        });
+
+        filterSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            filterVal.textContent = `${val} Hz`;
+            if (lowPassFilter) lowPassFilter.frequency.value = val;
+        });
+
+        resetFxBtn.addEventListener('click', () => {
+            speedSlider.value = 0.82;   speedVal.textContent = '0.82x';
+            bassSlider.value = 8;       bassVal.textContent = '+8.0 dB';
+            reverbSlider.value = 0.25;  reverbVal.textContent = '25%';
+            filterSlider.value = 12000; filterVal.textContent = '12000 Hz';
+            if (player) { rebasePosition(); player.playbackRate = 0.82; }
+            if (lowShelfEQ) lowShelfEQ.low.value = 8;
+            if (reverb) reverb.wet.value = 0.25;
+            if (lowPassFilter) lowPassFilter.frequency.value = 12000;
+            showToast('FX rack reset to defaults');
+        });
+
+        // ---------- Chop pad: repeats a short slice at the playhead while held ----------
+        function chopStart() {
+            if (!player || !isPlaying) return;
+            chopAnchor = currentPos();
+            chopStartedAt = Tone.now();
+            chopPad.classList.add('scale-95', 'border-purple-400', 'bg-purple-900');
+            const sliceMs = 125;
+            const restartSlice = () => {
+                player.stop();
+                player.start(0, chopAnchor);
+            };
+            restartSlice();
+            chopTimer = setInterval(restartSlice, sliceMs);
+        }
+
+        function chopEnd() {
+            if (!chopTimer) return;
+            clearInterval(chopTimer);
+            chopTimer = null;
+            chopPad.classList.remove('scale-95', 'border-purple-400', 'bg-purple-900');
+            // Resume from where the stutter would have been without the chop.
+            const rate = player.playbackRate || 1;
+            const resumeAt = (chopAnchor + (Tone.now() - chopStartedAt) * rate) % audioBuffer.duration;
+            player.stop();
+            startPlayback(resumeAt);
+        }
+
+        chopPad.addEventListener('mousedown', chopStart);
+        chopPad.addEventListener('touchstart', (e) => { e.preventDefault(); chopStart(); });
+        chopPad.addEventListener('mouseup', chopEnd);
+        chopPad.addEventListener('mouseleave', chopEnd);
+        chopPad.addEventListener('touchend', (e) => { e.preventDefault(); chopEnd(); });
+
+        // ---------- Vinyl tape stop ----------
+        tapeStopBtn.addEventListener('click', () => {
+            if (!player || !isPlaying) {
+                showToast('Start playback first to apply tape stop');
+                return;
+            }
+            showToast('Vinyl tape stop engaged...');
+            rebasePosition();
+            const targetRate = parseFloat(speedSlider.value);
+            let rate = player.playbackRate;
+            const decrement = rate / 20;
+            const tapeInterval = setInterval(() => {
+                rate -= decrement;
+                if (rate <= 0.05) {
+                    clearInterval(tapeInterval);
+                    pausePlayback();
+                    player.playbackRate = targetRate;
+                } else {
+                    rebasePosition();
+                    player.playbackRate = rate;
+                }
+            }, 50);
+        });
+
+        // ---------- Export ----------
+        exportBtn.addEventListener('click', async () => {
+            if (!audioBuffer) return;
+            exportBtn.disabled = true;
+            exportProgressContainer.classList.remove('hidden');
+            exportIcon.className = 'fa-solid fa-spinner fa-spin text-purple-400';
+            exportText.textContent = 'Rendering Screwed Audio...';
+            exportStatusText.textContent = 'Processing offline audio buffer...';
+            exportPercent.textContent = '10%';
+            exportProgressBar.style.width = '15%';
+
+            try {
+                const speed = parseFloat(speedSlider.value);
+                const bassBoost = parseFloat(bassSlider.value);
+                const reverbWet = parseFloat(reverbSlider.value);
+                const filterFreq = parseFloat(filterSlider.value);
+                const renderedDuration = audioBuffer.duration / speed;
+                const source = audioBuffer;
+
+                exportPercent.textContent = '40%';
+                exportProgressBar.style.width = '40%';
+                exportStatusText.textContent = 'Applying EQ & Screwed Pitch...';
+
+                const offlineBuffer = await Tone.Offline(async () => {
+                    const offPlayer = new Tone.Player(source);
+                    offPlayer.playbackRate = speed;
+                    offPlayer.loop = true;
+                    offPlayer.autostart = true;
+                    const offEQ = new Tone.EQ3({ low: bassBoost, mid: 0, high: 0, lowFrequency: 80 });
+                    const offFilter = new Tone.Filter({ frequency: filterFreq, type: 'lowpass' });
+                    const offReverb = new Tone.Reverb({ decay: 3.5, wet: reverbWet });
+                    await offReverb.generate();
+                    offPlayer.chain(offEQ, offFilter, offReverb, Tone.Destination);
+                }, renderedDuration);
+
+                exportPercent.textContent = '80%';
+                exportProgressBar.style.width = '80%';
+                exportStatusText.textContent = 'Encoding WAV file...';
+
+                const wavBlob = audioBufferToWavBlob(offlineBuffer);
+                const url = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `screwed_mix_${Date.now()}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                exportPercent.textContent = '100%';
+                exportProgressBar.style.width = '100%';
+                exportStatusText.textContent = 'Download complete!';
+                showToast('Screwed audio exported');
+            } catch (err) {
+                console.error(err);
+                showToast('Error rendering audio export');
+            } finally {
+                exportBtn.disabled = false;
+                exportIcon.className = 'fa-solid fa-file-arrow-down text-purple-400';
+                exportText.textContent = 'Export Screwed Audio (WAV)';
+                setTimeout(() => exportProgressContainer.classList.add('hidden'), 3000);
+            }
+        });
+
+        function audioBufferToWavBlob(buffer) {
+            const numOfChan = buffer.numberOfChannels;
+            const length = buffer.length * numOfChan * 2 + 44;
+            const out = new DataView(new ArrayBuffer(length));
+            const channels = [];
+            const sampleRate = buffer.sampleRate;
+            let offset = 0, pos = 0;
+
+            const writeString = (s) => { for (let i = 0; i < s.length; i++) out.setUint8(pos++, s.charCodeAt(i)); };
+            const setUint16 = (d) => { out.setUint16(pos, d, true); pos += 2; };
+            const setUint32 = (d) => { out.setUint32(pos, d, true); pos += 4; };
+
+            writeString('RIFF');
+            setUint32(length - 8);
+            writeString('WAVE');
+            writeString('fmt ');
+            setUint32(16);
+            setUint16(1);
+            setUint16(numOfChan);
+            setUint32(sampleRate);
+            setUint32(sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2);
+            setUint16(16);
+            writeString('data');
+            setUint32(length - pos - 4);
+
+            for (let i = 0; i < numOfChan; i++) channels.push(buffer.getChannelData(i));
+
+            while (offset < buffer.length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    const s = Math.max(-1, Math.min(1, channels[i][offset]));
+                    out.setInt16(pos, s < 0 ? s * 32768 : s * 32767, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+            return new Blob([out.buffer], { type: 'audio/wav' });
+        }
+
+        // ---------- Help modal ----------
+        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+        closeHelp.addEventListener('click', () => helpModal.classList.add('hidden'));
+        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+        helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.add('hidden'); });
+
+        // ---------- Init ----------
+        window.addEventListener('load', async () => {
+            clientIdInput.placeholder = getSavedClientId() ? 'Saved (paste to replace)' : 'Paste client ID';
+            await createDemoBuffer();
+            durationTimeEl.textContent = formatTime(audioBuffer.duration);
+            seekSlider.max = audioBuffer.duration;
+            drawVisualizer();
+            showToast('Chopped & Screwed studio ready!');
+        });
+    </script>
+</body>
+</html>
