@@ -820,8 +820,10 @@
                     const offEQ = new Tone.EQ3({ low: bassBoost, mid: 0, high: 0, lowFrequency: 80 });
                     const offFilter = new Tone.Filter({ frequency: filterFreq, type: 'lowpass' });
                     const offReverb = new Tone.Reverb({ decay: 3.5, wet: reverbWet });
-                    await offReverb.generate();
-                    offPlayer.chain(offEQ, offFilter, offReverb, Tone.Destination);
+                    const reverbReady = offReverb.generate();
+                    offPlayer.chain(offEQ, offFilter, offReverb);
+                    offReverb.toDestination(); // use the offline context's destination
+                    await reverbReady; // await last: awaiting earlier would switch Tone back to the live context before chaining
                 }, renderedDuration);
 
                 exportPercent.textContent = '80%';
