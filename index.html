@@ -141,6 +141,63 @@
         <!-- Right Column -->
         <div class="space-y-6 flex flex-col">
 
+            <!-- SONG DNA: per-track analysis and optimisation -->
+            <div id="songDna" class="bg-card border border-cyan-500/30 rounded-2xl p-6 shadow-xl space-y-4 relative overflow-hidden">
+                <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-500"></div>
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <h3 class="text-xs font-bold tracking-wider uppercase text-cyan-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-dna"></i> Song DNA
+                    </h3>
+                    <span id="dnaStatus" class="text-[10px] font-mono text-zinc-500">No track analysed</span>
+                </div>
+
+                <p id="dnaEmpty" class="text-xs text-zinc-400 leading-relaxed">
+                    Upload or import a track and its DNA is measured here: tempo, frequency balance, dynamics and stereo. Each song gets its own recommended treatment.
+                </p>
+
+                <div id="dnaBody" class="hidden space-y-4">
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-lg py-2"><div class="text-[10px] uppercase text-zinc-500">BPM (est.)</div><div id="dnaBpm" class="font-mono text-sm text-cyan-300">--</div></div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-lg py-2"><div class="text-[10px] uppercase text-zinc-500">Peak</div><div id="dnaPeak" class="font-mono text-sm text-cyan-300">--</div></div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-lg py-2"><div class="text-[10px] uppercase text-zinc-500">Dynamics</div><div id="dnaDyn" class="font-mono text-sm text-cyan-300">--</div></div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-lg py-2"><div class="text-[10px] uppercase text-zinc-500">Stereo</div><div id="dnaStereo" class="font-mono text-sm text-cyan-300">--</div></div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-lg py-2"><div class="text-[10px] uppercase text-zinc-500">Vocal band (est.)</div><div id="dnaVocal" class="font-mono text-sm text-cyan-300">--</div></div>
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-lg py-2"><div class="text-[10px] uppercase text-zinc-500">Quiet time</div><div id="dnaSilence" class="font-mono text-sm text-cyan-300">--</div></div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <p class="text-[10px] uppercase tracking-wider text-zinc-500">Frequency profile</p>
+                        <div id="dnaBands" class="space-y-1"></div>
+                        <canvas id="spectrumCanvas" class="w-full h-24 rounded-lg bg-zinc-950 border border-zinc-800"></canvas>
+                    </div>
+
+                    <div class="text-[11px] text-zinc-500 leading-relaxed" id="dnaReliability"></div>
+
+                    <div class="grid grid-cols-1 gap-2">
+                        <label class="text-[10px] uppercase tracking-wider text-zinc-500">Listening profile for the recommended version</label>
+                        <select id="profileSelectA" class="w-full bg-zinc-900 border border-zinc-700/60 text-zinc-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500"></select>
+                        <label class="text-[10px] uppercase tracking-wider text-zinc-500">Profile for the alternative version</label>
+                        <select id="profileSelectB" class="w-full bg-zinc-900 border border-zinc-700/60 text-zinc-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500"></select>
+                    </div>
+
+                    <button id="optimizeBtn" class="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-fuchsia-600 hover:brightness-110 text-white py-3 px-4 rounded-xl font-bold text-xs tracking-wider transition shadow-lg shadow-blue-900/40 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> OPTIMIZE THIS SONG
+                    </button>
+
+                    <div id="dnaReasons" class="text-xs text-zinc-300 space-y-1.5"></div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[10px] uppercase tracking-wider text-zinc-500">Compare versions</p>
+                    <div class="grid grid-cols-3 gap-2" role="tablist">
+                        <button data-version="original" class="version-btn py-2.5 rounded-lg text-xs font-semibold border border-zinc-700/60 bg-zinc-900 text-zinc-300 transition">Original</button>
+                        <button data-version="recommended" class="version-btn py-2.5 rounded-lg text-xs font-semibold border border-zinc-700/60 bg-zinc-900 text-zinc-300 transition">Recommended</button>
+                        <button data-version="alternative" class="version-btn py-2.5 rounded-lg text-xs font-semibold border border-zinc-700/60 bg-zinc-900 text-zinc-300 transition">Alternative</button>
+                    </div>
+                    <p id="versionNote" class="text-[11px] text-zinc-500 leading-relaxed"></p>
+                </div>
+            </div>
+
             <!-- Find & Import Songs -->
             <div class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl space-y-4">
                 <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
@@ -237,6 +294,52 @@
 
             </div>
 
+            <!-- Advanced Processing -->
+            <details id="advancedBox" class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl space-y-4">
+                <summary class="cursor-pointer text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-microchip text-purple-400"></i> Advanced Processing
+                </summary>
+                <div class="pt-4 space-y-4">
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">High-pass (rumble cut)</span><span id="hpfVal" class="font-mono text-purple-400">30 Hz</span></div>
+                        <input type="range" id="hpfSlider" min="20" max="45" value="30" step="1" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Mid EQ (vocal region)</span><span id="midVal" class="font-mono text-purple-400">0 dB</span></div>
+                        <input type="range" id="midSlider" min="-6" max="4" value="0" step="0.5" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Compressor threshold</span><span id="compThreshVal" class="font-mono text-purple-400">-16 dB</span></div>
+                        <input type="range" id="compThreshSlider" min="-26" max="-8" value="-16" step="1" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Compressor ratio</span><span id="compRatioVal" class="font-mono text-purple-400">3:1</span></div>
+                        <input type="range" id="compRatioSlider" min="1.5" max="6" value="3" step="0.5" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Warmth (saturation)</span><span id="satVal" class="font-mono text-purple-400">0%</span></div>
+                        <input type="range" id="satSlider" min="0" max="0.2" value="0.04" step="0.01" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Stereo width (0.50 = unchanged, max 0.65)</span><span id="widthVal" class="font-mono text-purple-400">0.50</span></div>
+                        <input type="range" id="widthSlider" min="0.4" max="0.65" value="0.5" step="0.01" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Reverb decay</span><span id="decayVal" class="font-mono text-purple-400">3.0 s</span></div>
+                        <input type="range" id="decaySlider" min="1.5" max="8" value="3" step="0.1" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Echo (wet)</span><span id="delayVal" class="font-mono text-purple-400">0%</span></div>
+                        <input type="range" id="delaySlider" min="0" max="0.4" value="0" step="0.01" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-zinc-200">Chop slice length</span><span id="chopMsVal" class="font-mono text-purple-400">125 ms</span></div>
+                        <input type="range" id="chopMsSlider" min="40" max="600" value="125" step="5" class="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <p class="text-[11px] text-zinc-500 leading-relaxed">Output limiter and a -1 dBFS ceiling are always on to prevent clipping. Live playback and WAV export use the same chain.</p>
+                </div>
+            </details>
+
             <!-- Export Section -->
             <div class="bg-card border border-zinc-800/80 rounded-2xl p-6 shadow-xl space-y-4">
                 <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
@@ -298,12 +401,22 @@
         <span id="toastMsg" class="text-xs font-medium">Notification message</span>
     </div>
 
+    <script src="js/engine.js"></script>
     <script>
         // ---------- Global state ----------
         let audioBuffer = null;     // source audio (demo, search import, or upload)
         let playerBuffer = null;    // the buffer the current Tone.Player was built from
         let player = null;
-        let lowShelfEQ = null, lowPassFilter = null, reverb = null, gainNode = null, analyser = null;
+        // Audio graph: player -> dryGain (bypass path) and player -> wetChain -> wetGain (processed path)
+        // Both paths meet at masterGain -> analyser -> fftAnalyser -> gainNode -> destination.
+        let masterGain = null, dryGain = null, wetGain = null, wetChain = null;
+        let gainNode = null, analyser = null, fftAnalyser = null;
+        let fxParams = null;                // the FX settings currently applied (see DEFAULT_FX)
+        let currentVersion = 'original';    // 'original' | 'recommended' | 'alternative'
+        let versions = {};                  // { recommended: {profileId, params, reasons}, alternative: {...} }
+        let trackAnalysis = null;           // analysis of the currently loaded buffer
+        let analysisToken = 0;              // increments on every new track so stale analyses are dropped
+        let chopMs = 125;                   // stutter slice length used by the chop pad
         let isPlaying = false;
         let playOffset = 0;         // track position (s) when playback last (re)anchored
         let playStartCtx = 0;       // Tone.now() at that anchor
@@ -335,6 +448,22 @@
         const resetFxBtn = document.getElementById('resetFxBtn');
         const presetSelect = document.getElementById('presetSelect');
         const surpriseBtn = document.getElementById('surpriseBtn');
+        const dnaEmpty = document.getElementById('dnaEmpty');
+        const dnaBody = document.getElementById('dnaBody');
+        const dnaStatus = document.getElementById('dnaStatus');
+        const optimizeBtn = document.getElementById('optimizeBtn');
+        const profileSelectA = document.getElementById('profileSelectA');
+        const profileSelectB = document.getElementById('profileSelectB');
+        const versionNote = document.getElementById('versionNote');
+        const spectrumCanvas = document.getElementById('spectrumCanvas');
+        const spectrumCtx = spectrumCanvas.getContext('2d');
+        const advSliders = {
+            hpf: document.getElementById('hpfSlider'), mid: document.getElementById('midSlider'),
+            compThresh: document.getElementById('compThreshSlider'), compRatio: document.getElementById('compRatioSlider'),
+            sat: document.getElementById('satSlider'), width: document.getElementById('widthSlider'),
+            decay: document.getElementById('decaySlider'), delay: document.getElementById('delaySlider'),
+            chopMs: document.getElementById('chopMsSlider')
+        };
         const chopPad = document.getElementById('chopPad');
         const tapeStopBtn = document.getElementById('tapeStopBtn');
         const exportBtn = document.getElementById('exportBtn');
@@ -399,21 +528,119 @@
         }
 
         // ---------- Audio chain (built once) ----------
+        // ---------- Audio graph ----------
+        // Original (bypass) path: player -> dryGain.
+        // Processed path:          player -> wetChain -> wetGain.
+        // Both meet at masterGain -> analyser -> fftAnalyser -> gainNode -> destination.
+        const DEFAULT_FX = {
+            speed: 0.82, bass: 8, mid: 0, hpf: 30, filter: 12000,
+            reverbWet: 0.25, reverbDecay: 3.5,
+            delayWet: 0, delayTime: 0.3, delayFeedback: 0.25,
+            compRatio: 3, compThreshold: -16, saturation: 0,
+            width: 0.5, chopMs: 125, limiter: -1
+        };
+        const clampN = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+        // Some Tone params are Signals (.value) and some are plain properties. Set either.
+        function setNodeParam(node, key, value) {
+            const target = node[key];
+            if (target && typeof target === 'object' && 'value' in target) target.value = value;
+            else node[key] = value;
+        }
+
+        // Builds the effects chain synchronously so it works in the live context and inside Tone.Offline.
+        // `out` is the node the chain feeds. `ready` is the reverb impulse promise: await it last.
+        // Final output ceiling (-1 dBFS). Linear below the knee, then a smooth curve that never exceeds the ceiling.
+        // A compressor-style limiter can overshoot on fast transients, so this stage guarantees no clipping.
+        function makeCeilingCurve(ceiling, knee, n = 4096) {
+            const curve = new Float32Array(n);
+            for (let i = 0; i < n; i++) {
+                const x = (i / (n - 1)) * 2 - 1;
+                const a = Math.abs(x);
+                const y = a <= knee ? a : knee + (ceiling - knee) * Math.tanh((a - knee) / (ceiling - knee));
+                curve[i] = x < 0 ? -y : y;
+            }
+            return curve;
+        }
+        const OUTPUT_CEILING_CURVE = makeCeilingCurve(0.891, 0.7);
+
+        function buildWetChain(p, out) {
+            const hpf = new Tone.Filter({ frequency: p.hpf, type: 'highpass', rolloff: -24 });
+            const eq = new Tone.EQ3({ low: p.bass, mid: p.mid, high: 0, lowFrequency: 80 });
+            const comp = new Tone.Compressor({ threshold: p.compThreshold, ratio: p.compRatio, attack: 0.02, release: 0.25, knee: 6 });
+            const sat = new Tone.Distortion({ distortion: clampN(p.saturation * 2.5, 0, 1), oversample: '2x', wet: clampN(p.saturation * 5, 0, 1) });
+            const lp = new Tone.Filter({ frequency: p.filter, type: 'lowpass' });
+            const delay = new Tone.FeedbackDelay({ delayTime: p.delayTime, feedback: p.delayFeedback, wet: p.delayWet });
+            const reverb = new Tone.Reverb({ decay: p.reverbDecay, wet: p.reverbWet });
+            const width = new Tone.StereoWidener({ width: p.width });
+            const limiter = new Tone.Limiter(p.limiter);
+            const ceiling = new Tone.WaveShaper(OUTPUT_CEILING_CURVE, 4096);
+            ceiling.oversample = '2x';
+            // Player -> HPF -> EQ -> Compressor -> Saturation -> LPF -> Echo -> Reverb -> Stereo width -> Limiter -> Ceiling -> out
+            hpf.chain(eq, comp, sat, lp, delay, reverb, width, limiter, ceiling, out);
+            const ready = reverb.generate();
+            return {
+                input: hpf, hpf, eq, comp, sat, lp, delay, reverb, width, limiter, ceiling, ready,
+                dispose() { [hpf, eq, comp, sat, lp, delay, reverb, width, limiter, ceiling].forEach(n => n.dispose()); }
+            };
+        }
+
         async function ensureAudioChain() {
             await Tone.start();
-            if (lowShelfEQ) return;
-            lowShelfEQ = new Tone.EQ3({ low: parseFloat(bassSlider.value), mid: 0, high: 0, lowFrequency: 80 });
-            lowPassFilter = new Tone.Filter({ frequency: parseFloat(filterSlider.value), type: 'lowpass' });
-            reverb = new Tone.Reverb({ decay: 3.5, wet: parseFloat(reverbSlider.value) });
-            await reverb.generate();
+            if (masterGain) return;
+            masterGain = new Tone.Gain(1);
+            dryGain = new Tone.Gain(0);
+            wetGain = new Tone.Gain(1);
             analyser = new Tone.Analyser('waveform', 1024);
+            fftAnalyser = new Tone.Analyser('fft', 256);
             gainNode = new Tone.Gain(0.9);
-            // Player -> EQ -> LowPass -> Reverb -> Analyser -> Gain -> Out
-            lowShelfEQ.connect(lowPassFilter);
-            lowPassFilter.connect(reverb);
-            reverb.connect(analyser);
-            analyser.connect(gainNode);
+            dryGain.connect(masterGain);
+            wetGain.connect(masterGain);
+            masterGain.connect(analyser);
+            analyser.connect(fftAnalyser);
+            fftAnalyser.connect(gainNode);
             gainNode.toDestination();
+            wetChain = buildWetChain(fxParams || DEFAULT_FX, wetGain);
+            await wetChain.ready;
+        }
+
+        // Live-update the existing chain without rebuilding it.
+        function pushLive(p) {
+            chopMs = p.chopMs;
+            if (player && Math.abs(player.playbackRate - p.speed) > 1e-6) {
+                rebasePosition();
+                player.playbackRate = p.speed;
+            }
+            if (!wetChain) return;
+            const w = wetChain;
+            w.hpf.frequency.value = p.hpf;
+            w.eq.low.value = p.bass;
+            w.eq.mid.value = p.mid;
+            setNodeParam(w.comp, 'threshold', p.compThreshold);
+            setNodeParam(w.comp, 'ratio', p.compRatio);
+            setNodeParam(w.sat, 'distortion', clampN(p.saturation * 2.5, 0, 1));
+            setNodeParam(w.sat, 'wet', clampN(p.saturation * 5, 0, 1));
+            w.lp.frequency.value = p.filter;
+            w.delay.delayTime.value = p.delayTime;
+            w.delay.feedback.value = p.delayFeedback;
+            w.delay.wet.value = p.delayWet;
+            w.reverb.wet.value = p.reverbWet;
+            w.width.width.value = p.width;
+            setNodeParam(w.limiter, 'threshold', p.limiter);
+        }
+
+        // Replace the effects chain (needed when reverb decay changes). Keeps playback going.
+        async function rebuildWet(p) {
+            await ensureAudioChain();
+            const old = wetChain;
+            const next = buildWetChain(p, wetGain);
+            wetChain = next;
+            if (player) {
+                if (old) player.disconnect(old.input);
+                player.connect(next.input);
+            }
+            if (old) old.dispose();
+            await next.ready;
         }
 
         // Make sure the chain exists and the player is built from the current audioBuffer.
@@ -427,7 +654,8 @@
                 playbackRate: parseFloat(speedSlider.value),
                 autostart: false
             });
-            player.connect(lowShelfEQ);
+            player.connect(dryGain);
+            player.connect(wetChain.input);
             playerBuffer = audioBuffer;
             isPlaying = false;
             playOffset = 0;
@@ -485,6 +713,7 @@
             }, 8);
             audioBuffer = buffer;
             trackNameDisplay.textContent = 'Demo Beat (Synthesized Loop)';
+            onTrackLoaded();
         }
 
         // ---------- Visualizer ----------
@@ -500,6 +729,7 @@
 
         function drawVisualizer() {
             requestAnimationFrame(drawVisualizer);
+            drawSpectrum();
             ctx.fillStyle = '#09090b';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -577,6 +807,7 @@
                 audioBuffer = await Tone.getContext().rawContext.decodeAudioData(arrayBuffer);
                 trackNameDisplay.textContent = file.name;
                 stopPlayback();
+                onTrackLoaded();
                 showToast('Audio loaded');
             } catch (err) {
                 console.error(err);
@@ -681,6 +912,7 @@
                 audioBuffer = await Tone.getContext().rawContext.decodeAudioData(arrayBuffer);
                 trackNameDisplay.textContent = `${track.artist_name || 'Unknown'} — ${track.name}`;
                 stopPlayback();
+                onTrackLoaded();
                 showToast('Track imported. Press Play.');
             } catch (err) {
                 console.error(err);
@@ -707,78 +939,283 @@
         });
 
         // ---------- FX controls ----------
-        speedSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            speedVal.textContent = val.toFixed(2) + 'x';
-            if (player) {
-                rebasePosition();
-                player.playbackRate = val;
-            }
-        });
-
-        bassSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            bassVal.textContent = `+${val.toFixed(1)} dB`;
-            if (lowShelfEQ) lowShelfEQ.low.value = val;
-        });
-
-        reverbSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            reverbVal.textContent = `${Math.round(val * 100)}%`;
-            if (reverb) reverb.wet.value = val;
-        });
-
-        filterSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            filterVal.textContent = `${val} Hz`;
-            if (lowPassFilter) lowPassFilter.frequency.value = val;
-        });
-
-        resetFxBtn.addEventListener('click', () => {
-            speedSlider.value = 0.82;   speedVal.textContent = '0.82x';
-            bassSlider.value = 8;       bassVal.textContent = '+8.0 dB';
-            reverbSlider.value = 0.25;  reverbVal.textContent = '25%';
-            filterSlider.value = 12000; filterVal.textContent = '12000 Hz';
-            if (player) { rebasePosition(); player.playbackRate = 0.82; }
-            if (lowShelfEQ) lowShelfEQ.low.value = 8;
-            if (reverb) reverb.wet.value = 0.25;
-            if (lowPassFilter) lowPassFilter.frequency.value = 12000;
-            showToast('FX rack reset to defaults');
-        });
-
-        // ---------- Presets & Surprise me: set the sliders, then reuse the existing input handlers ----------
         const FX_PRESETS = {
             classic: { speed: 0.82, bass: 8,  reverb: 0.25, filter: 12000 },
             deep:    { speed: 0.72, bass: 12, reverb: 0.35, filter: 6000 },
             chopped: { speed: 0.88, bass: 9,  reverb: 0.45, filter: 4500 },
             dreamy:  { speed: 0.78, bass: 6,  reverb: 0.60, filter: 9000 }
         };
+        const VERSION_ACTIVE = 'version-btn py-2.5 rounded-lg text-xs font-semibold border border-cyan-400 bg-cyan-500/20 text-cyan-200 transition';
+        const VERSION_IDLE = 'version-btn py-2.5 rounded-lg text-xs font-semibold border border-zinc-700/60 bg-zinc-900 text-zinc-300 transition';
+        const VERSION_LABELS = { original: 'Original', recommended: 'Recommended', alternative: 'Alternative' };
 
-        function applyFx(v) {
-            speedSlider.value = v.speed;   speedSlider.dispatchEvent(new Event('input'));
-            bassSlider.value = v.bass;     bassSlider.dispatchEvent(new Event('input'));
-            reverbSlider.value = v.reverb; reverbSlider.dispatchEvent(new Event('input'));
-            filterSlider.value = v.filter; filterSlider.dispatchEvent(new Event('input'));
+        function fxInputs() {
+            return [speedSlider, bassSlider, reverbSlider, filterSlider, ...Object.values(advSliders), presetSelect, surpriseBtn, resetFxBtn];
         }
 
-        function randomBetween(min, max, step) {
-            const steps = Math.round((max - min) / step);
-            return +(min + Math.floor(Math.random() * (steps + 1)) * step).toFixed(3);
+        function readFxFromSliders() {
+            const base = fxParams || DEFAULT_FX;
+            return {
+                speed: +speedSlider.value,
+                bass: +bassSlider.value,
+                mid: +advSliders.mid.value,
+                hpf: +advSliders.hpf.value,
+                filter: +filterSlider.value,
+                reverbWet: +reverbSlider.value,
+                reverbDecay: +advSliders.decay.value,
+                delayWet: +advSliders.delay.value,
+                delayTime: base.delayTime,
+                delayFeedback: base.delayFeedback,
+                compRatio: +advSliders.compRatio.value,
+                compThreshold: +advSliders.compThresh.value,
+                saturation: +advSliders.sat.value,
+                width: +advSliders.width.value,
+                chopMs: +advSliders.chopMs.value,
+                limiter: -1
+            };
         }
 
-        presetSelect.addEventListener('change', (e) => {
-            applyFx(FX_PRESETS[e.target.value]);
+        function setSlidersFrom(p) {
+            speedSlider.value = p.speed;
+            bassSlider.value = p.bass;
+            reverbSlider.value = p.reverbWet;
+            filterSlider.value = p.filter;
+            advSliders.hpf.value = p.hpf;
+            advSliders.mid.value = p.mid;
+            advSliders.compThresh.value = p.compThreshold;
+            advSliders.compRatio.value = p.compRatio;
+            advSliders.sat.value = p.saturation;
+            advSliders.width.value = p.width;
+            advSliders.decay.value = p.reverbDecay;
+            advSliders.delay.value = p.delayWet;
+            advSliders.chopMs.value = p.chopMs;
+            updateLabels();
+        }
+
+        function updateLabels() {
+            const id = (x) => document.getElementById(x);
+            speedVal.textContent = (+speedSlider.value).toFixed(2) + 'x';
+            bassVal.textContent = `+${(+bassSlider.value).toFixed(1)} dB`;
+            reverbVal.textContent = `${Math.round(reverbSlider.value * 100)}%`;
+            filterVal.textContent = `${filterSlider.value} Hz`;
+            id('hpfVal').textContent = `${advSliders.hpf.value} Hz`;
+            const m = +advSliders.mid.value;
+            id('midVal').textContent = `${m > 0 ? '+' : ''}${m.toFixed(1)} dB`;
+            id('compThreshVal').textContent = `${advSliders.compThresh.value} dB`;
+            id('compRatioVal').textContent = `${advSliders.compRatio.value}:1`;
+            id('satVal').textContent = `${Math.round(advSliders.sat.value * 100)}%`;
+            id('widthVal').textContent = (+advSliders.width.value).toFixed(2);
+            id('decayVal').textContent = `${(+advSliders.decay.value).toFixed(1)} s`;
+            id('delayVal').textContent = `${Math.round(advSliders.delay.value * 100)}%`;
+            id('chopMsVal').textContent = `${advSliders.chopMs.value} ms`;
+        }
+
+        // Writes FX values into the sliders and the live nodes. Structural changes need rebuild.
+        async function applyParams(p, opts = {}) {
+            fxParams = { ...p };
+            setSlidersFrom(p);
+            pushLive(p);
+            if (opts.rebuild) await rebuildWet(fxParams);
+        }
+
+        // Saves the current slider values into the version being edited (not for Original).
+        function storeVersion(p) {
+            if (currentVersion === 'original') return;
+            const v = versions[currentVersion] || { profileId: null, profileName: null, reasons: [] };
+            versions[currentVersion] = { ...v, params: { ...p } };
+        }
+
+        function highlightVersion() {
+            document.querySelectorAll('.version-btn').forEach(btn => {
+                btn.className = btn.dataset.version === currentVersion ? VERSION_ACTIVE : VERSION_IDLE;
+            });
+        }
+
+        async function setVersion(name) {
+            if (!VERSION_LABELS[name]) return;
+            if (name !== 'original' && !versions[name]) {
+                versions[name] = { profileId: null, profileName: 'Custom', reasons: [], params: { ...(fxParams || DEFAULT_FX) } };
+            }
+            currentVersion = name;
+            await ensureAudioChain();
+            highlightVersion();
+            const locked = name === 'original';
+            fxInputs().forEach(el => { el.disabled = locked; });
+            if (locked) {
+                dryGain.gain.rampTo(1, 0.05);
+                wetGain.gain.rampTo(0, 0.05);
+                speedSlider.value = 1;
+                updateLabels();
+                if (player) { rebasePosition(); player.playbackRate = 1; }
+                versionNote.textContent = 'Original: your untouched file, no processing. Switch to Recommended or Alternative to hear a treatment.';
+            } else {
+                dryGain.gain.rampTo(0, 0.05);
+                wetGain.gain.rampTo(1, 0.05);
+                await applyParams(versions[name].params, { rebuild: true });
+                const v = versions[name];
+                versionNote.textContent = `${VERSION_LABELS[name]}: ${v.profileName || 'custom settings'}. Changing a control saves it to this version.`;
+            }
+            renderReasons();
+        }
+
+        async function onTrackLoaded() {
+            const token = ++analysisToken;
+            trackAnalysis = null;
+            versions = {};
+            dnaEmpty.classList.add('hidden');
+            dnaBody.classList.remove('hidden');
+            dnaStatus.textContent = 'Analysing...';
+            dnaStatus.className = 'text-[10px] font-mono text-cyan-400 animate-pulse';
+            optimizeBtn.disabled = true;
+            await new Promise(r => setTimeout(r, 30));   // let the panel paint first
+            if (!audioBuffer || token !== analysisToken) return;
+            const channels = [];
+            for (let i = 0; i < audioBuffer.numberOfChannels; i++) channels.push(audioBuffer.getChannelData(i));
+            let a;
+            try {
+                a = SongEngine.analyzeSong(channels, audioBuffer.sampleRate);
+            } catch (err) {
+                console.error(err);
+                dnaStatus.textContent = 'Analysis failed';
+                dnaStatus.className = 'text-[10px] font-mono text-red-400';
+                return;
+            }
+            if (token !== analysisToken) return;   // a newer track arrived while analysing
+            trackAnalysis = a;
+            const ranking = SongEngine.pickProfile(a);
+            profileSelectA.value = ranking[0].id;
+            profileSelectB.value = ranking[1].id;
+            versions.recommended = SongEngine.recommend(a, profileSelectA.value);
+            versions.alternative = SongEngine.recommend(a, profileSelectB.value);
+            optimizeBtn.disabled = false;
+            renderDna(a);
+            await setVersion('original');         // listen to the untouched file first
+            showToast('Song DNA ready. Press OPTIMIZE THIS SONG to apply the recommendation.');
+        }
+
+        function renderDna(a) {
+            dnaStatus.textContent = `${a.duration}s · ${a.channels}ch`;
+            dnaStatus.className = 'text-[10px] font-mono text-cyan-400';
+            const set = (id, t) => { document.getElementById(id).textContent = t; };
+            set('dnaBpm', a.bpm ? `${a.bpm}` : 'n/a');
+            set('dnaPeak', `${a.peakDb} dB`);
+            set('dnaDyn', `${a.dynamicRangeDb} dB`);
+            set('dnaStereo', a.stereo.isStereo ? `width ${a.stereo.width.toFixed(2)}` : 'mono');
+            set('dnaVocal', `${Math.round(a.vocal.ratio * 100)}%`);
+            set('dnaSilence', `${Math.round(a.silenceRatio * 100)}%`);
+            const maxShare = Math.max(0.0001, ...SongEngine.BANDS.map(b => a.bandsPct[b.id]));
+            document.getElementById('dnaBands').innerHTML = SongEngine.BANDS.map(b => {
+                const share = a.bandsPct[b.id];
+                const w = Math.round(share / maxShare * 100);
+                return `<div class="flex items-center gap-2 text-[11px]">` +
+                    `<span class="w-16 text-zinc-400">${b.label}</span>` +
+                    `<div class="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-500" style="width:${w}%"></div></div>` +
+                    `<span class="w-10 text-right font-mono text-zinc-300">${Math.round(share * 100)}%</span></div>`;
+            }).join('');
+            document.getElementById('dnaReliability').textContent =
+                'Measured: loudness, spectrum, stereo, dynamics. ' +
+                'Estimated: ' + (a.bpm ? 'tempo (may be off by a multiple)' : 'tempo unavailable') + ', vocal band share (energy in 300-3400 Hz, not true vocal detection).';
+        }
+
+        function renderReasons() {
+            const el = document.getElementById('dnaReasons');
+            if (!trackAnalysis) { el.innerHTML = ''; return; }
+            const ranking = SongEngine.pickProfile(trackAnalysis);
+            const shown = versions[currentVersion === 'original' ? 'recommended' : currentVersion];
+            const reasonItems = shown && shown.reasons ? shown.reasons.map(r => `<li>${r}</li>`).join('') : '';
+            const rankItems = ranking.slice(0, 3).map(r =>
+                `<li>${SongEngine.PROFILES[r.id].name} (score ${r.score})${r.reasons.length ? ': ' + r.reasons.join(', ') : ''}</li>`).join('');
+            el.innerHTML =
+                `<p class="text-[10px] uppercase tracking-wider text-zinc-500">Why these settings</p>` +
+                `<ul class="list-disc pl-4 space-y-1">${reasonItems || '<li>Press OPTIMIZE to generate reasons.</li>'}</ul>` +
+                `<p class="text-[10px] uppercase tracking-wider text-zinc-500 pt-1">Best-matching profiles for this track</p>` +
+                `<ol class="list-decimal pl-4 space-y-1 text-zinc-400">${rankItems}</ol>`;
+        }
+
+        function populateProfiles() {
+            const opts = SongEngine.PROFILE_ORDER.map(id =>
+                `<option value="${id}">${SongEngine.PROFILES[id].name}</option>`).join('');
+            profileSelectA.innerHTML = opts;
+            profileSelectB.innerHTML = opts;
+        }
+
+        // Any live slider move: update the audio, label, and save into the version being edited.
+        function onFxInput() {
+            if (currentVersion === 'original') return;
+            const p = readFxFromSliders();
+            fxParams = p;
+            updateLabels();
+            pushLive(p);
+            storeVersion(p);
+        }
+
+        // ---------- Wiring ----------
+        speedSlider.addEventListener('input', onFxInput);
+        bassSlider.addEventListener('input', onFxInput);
+        reverbSlider.addEventListener('input', onFxInput);
+        filterSlider.addEventListener('input', onFxInput);
+        ['hpf', 'mid', 'compThresh', 'compRatio', 'sat', 'width', 'delay', 'chopMs'].forEach(k => advSliders[k].addEventListener('input', onFxInput));
+        advSliders.decay.addEventListener('input', onFxInput);
+        // Reverb decay can't be changed on a live reverb, so rebuild the chain when the slider is released.
+        advSliders.decay.addEventListener('change', async () => {
+            if (currentVersion === 'original') return;
+            const p = readFxFromSliders();
+            fxParams = p;
+            storeVersion(p);
+            await rebuildWet(p);
+        });
+
+        document.querySelectorAll('.version-btn').forEach(btn => {
+            btn.addEventListener('click', () => setVersion(btn.dataset.version));
+        });
+
+        profileSelectA.addEventListener('change', async () => {
+            if (!trackAnalysis) return;
+            versions.recommended = SongEngine.recommend(trackAnalysis, profileSelectA.value);
+            if (currentVersion === 'recommended') await setVersion('recommended');
+            else renderReasons();
+        });
+
+        profileSelectB.addEventListener('change', async () => {
+            if (!trackAnalysis) return;
+            versions.alternative = SongEngine.recommend(trackAnalysis, profileSelectB.value);
+            if (currentVersion === 'alternative') await setVersion('alternative');
+            else renderReasons();
+        });
+
+        optimizeBtn.addEventListener('click', async () => {
+            if (!trackAnalysis) return;
+            versions.recommended = SongEngine.recommend(trackAnalysis, profileSelectA.value);
+            await setVersion('recommended');
+            showToast(`Optimised: ${versions.recommended.profileName}`);
+        });
+
+        presetSelect.addEventListener('change', async (e) => {
+            const preset = FX_PRESETS[e.target.value];
+            if (currentVersion === 'original') await setVersion('recommended');
+            const p = {
+                ...readFxFromSliders(),
+                speed: preset.speed, bass: preset.bass, reverbWet: preset.reverb, filter: preset.filter
+            };
+            await applyParams(p, { rebuild: false });
+            storeVersion(p);
             showToast(`Preset applied: ${e.target.options[e.target.selectedIndex].text}`);
         });
 
-        surpriseBtn.addEventListener('click', () => {
-            applyFx({
-                speed: randomBetween(0.70, 0.90, 0.01),
-                bass: randomBetween(4, 13, 0.5),
-                reverb: randomBetween(0.15, 0.60, 0.05),
-                filter: randomBetween(3000, 12000, 100)
-            });
-            showToast('Surprise! New random chop & screw settings');
+        // Surprise Me 2.0: a new safe, song-aware variation goes into the Alternative version.
+        surpriseBtn.addEventListener('click', async () => {
+            if (!trackAnalysis) { showToast('Still analysing the track, one moment...'); return; }
+            versions.alternative = SongEngine.surprise(trackAnalysis, profileSelectB.value);
+            await setVersion('alternative');
+            showToast('Surprise! New Alternative treatment');
+        });
+
+        resetFxBtn.addEventListener('click', async () => {
+            if (currentVersion === 'original') { showToast('Original has no FX to reset'); return; }
+            const p = { ...DEFAULT_FX };
+            await applyParams(p, { rebuild: true });
+            storeVersion(p);
+            showToast('FX rack reset to defaults');
         });
 
         // ---------- Chop pad: repeats a short slice at the playhead while held ----------
@@ -787,7 +1224,7 @@
             chopAnchor = currentPos();
             chopStartedAt = Tone.now();
             chopPad.classList.add('scale-95', 'border-purple-400', 'bg-purple-900');
-            const sliceMs = 125;
+            const sliceMs = chopMs;
             const restartSlice = () => {
                 player.stop();
                 player.start(0, chopAnchor);
@@ -839,6 +1276,7 @@
         });
 
         // ---------- Export ----------
+        // Uses the same buildWetChain() as live playback, so the WAV matches what you hear.
         exportBtn.addEventListener('click', async () => {
             if (!audioBuffer) return;
             exportBtn.disabled = true;
@@ -850,29 +1288,34 @@
             exportProgressBar.style.width = '15%';
 
             try {
-                const speed = parseFloat(speedSlider.value);
-                const bassBoost = parseFloat(bassSlider.value);
-                const reverbWet = parseFloat(reverbSlider.value);
-                const filterFreq = parseFloat(filterSlider.value);
-                const renderedDuration = audioBuffer.duration / speed;
+                const bypass = currentVersion === 'original';
+                const p = bypass ? { ...DEFAULT_FX, speed: 1 } : readFxFromSliders();
+                const renderedDuration = audioBuffer.duration / p.speed;
                 const source = audioBuffer;
 
                 exportPercent.textContent = '40%';
                 exportProgressBar.style.width = '40%';
-                exportStatusText.textContent = 'Applying EQ & Screwed Pitch...';
+                exportStatusText.textContent = bypass ? 'Rendering original (no processing)...'
+                    : 'Applying EQ, compression, filter, echo, reverb, width & limiter...';
 
                 const offlineBuffer = await Tone.Offline(async () => {
                     const offPlayer = new Tone.Player(source);
-                    offPlayer.playbackRate = speed;
+                    offPlayer.playbackRate = p.speed;
                     offPlayer.loop = true;
-                    offPlayer.autostart = true;
-                    const offEQ = new Tone.EQ3({ low: bassBoost, mid: 0, high: 0, lowFrequency: 80 });
-                    const offFilter = new Tone.Filter({ frequency: filterFreq, type: 'lowpass' });
-                    const offReverb = new Tone.Reverb({ decay: 3.5, wet: reverbWet });
-                    const reverbReady = offReverb.generate();
-                    offPlayer.chain(offEQ, offFilter, offReverb);
-                    offReverb.toDestination(); // use the offline context's destination
-                    await reverbReady; // await last: awaiting earlier would switch Tone back to the live context before chaining
+                    const dry = new Tone.Gain(bypass ? 1 : 0);
+                    const wetOut = new Tone.Gain(bypass ? 0 : 1);
+                    offPlayer.connect(dry);
+                    dry.toDestination();
+                    let ready = null;
+                    if (!bypass) {
+                        const chain = buildWetChain(p, wetOut);
+                        offPlayer.connect(chain.input);
+                        wetOut.toDestination();
+                        ready = chain.ready;
+                    }
+                    // start() explicitly: autostart does not fire inside Tone.Offline and renders silence.
+                    offPlayer.start(0);
+                    if (ready) await ready; // await last: awaiting earlier would switch Tone back to the live context before chaining
                 }, renderedDuration);
 
                 exportPercent.textContent = '80%';
@@ -950,9 +1393,39 @@
         closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
         helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.add('hidden'); });
 
+        // ---------- Live spectrum (SONG DNA panel) ----------
+        function drawSpectrum() {
+            const W = spectrumCanvas.clientWidth, H = spectrumCanvas.clientHeight;
+            if (!W || !H) return;
+            if (spectrumCanvas.width !== W) spectrumCanvas.width = W;
+            if (spectrumCanvas.height !== H) spectrumCanvas.height = H;
+            spectrumCtx.fillStyle = '#09090b';
+            spectrumCtx.fillRect(0, 0, W, H);
+            if (!fftAnalyser || !isPlaying) {
+                spectrumCtx.fillStyle = '#52525b';
+                spectrumCtx.font = '11px sans-serif';
+                spectrumCtx.fillText('Press Play for the live spectrum', 10, H / 2 + 4);
+                return;
+            }
+            const vals = fftAnalyser.getValue();
+            const grad = spectrumCtx.createLinearGradient(0, 0, W, 0);
+            grad.addColorStop(0, '#22d3ee');
+            grad.addColorStop(0.5, '#3b82f6');
+            grad.addColorStop(1, '#d946ef');
+            spectrumCtx.fillStyle = grad;
+            const bw = W / vals.length;
+            for (let i = 0; i < vals.length; i++) {
+                const h = clampN((vals[i] + 100) / 100, 0, 1) * H;
+                spectrumCtx.fillRect(i * bw, H - h, Math.max(1, bw - 1), h);
+            }
+        }
+
         // ---------- Init ----------
         window.addEventListener('load', async () => {
             clientIdInput.placeholder = getSavedClientId() ? 'Saved (paste to replace)' : 'Paste client ID';
+            populateProfiles();
+            fxParams = { ...DEFAULT_FX };
+            setSlidersFrom(fxParams);
             await createDemoBuffer();
             durationTimeEl.textContent = formatTime(audioBuffer.duration);
             seekSlider.max = audioBuffer.duration;
