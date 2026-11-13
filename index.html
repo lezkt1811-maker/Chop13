@@ -181,6 +181,18 @@
                     <button id="resetFxBtn" class="text-xs text-zinc-500 hover:text-zinc-300 transition">Reset Default</button>
                 </div>
 
+                <div class="flex gap-2">
+                    <select id="presetSelect" class="flex-1 bg-zinc-900 border border-zinc-700/60 text-zinc-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500">
+                        <option value="classic">Classic Screw (H-Town)</option>
+                        <option value="deep">Deep Dive (slow & heavy)</option>
+                        <option value="chopped">Chopped & Hazy (mid-speed)</option>
+                        <option value="dreamy">Dreamy Syrup (airy)</option>
+                    </select>
+                    <button id="surpriseBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition shrink-0 flex items-center gap-1.5">
+                        <i class="fa-solid fa-dice"></i> Surprise me
+                    </button>
+                </div>
+
                 <div class="space-y-2">
                     <div class="flex justify-between items-center text-sm">
                         <span class="font-medium text-zinc-200">Pitch & Speed (Screwed)</span>
@@ -321,6 +333,8 @@
         const filterSlider = document.getElementById('filterSlider');
         const filterVal = document.getElementById('filterVal');
         const resetFxBtn = document.getElementById('resetFxBtn');
+        const presetSelect = document.getElementById('presetSelect');
+        const surpriseBtn = document.getElementById('surpriseBtn');
         const chopPad = document.getElementById('chopPad');
         const tapeStopBtn = document.getElementById('tapeStopBtn');
         const exportBtn = document.getElementById('exportBtn');
@@ -730,6 +744,41 @@
             if (reverb) reverb.wet.value = 0.25;
             if (lowPassFilter) lowPassFilter.frequency.value = 12000;
             showToast('FX rack reset to defaults');
+        });
+
+        // ---------- Presets & Surprise me: set the sliders, then reuse the existing input handlers ----------
+        const FX_PRESETS = {
+            classic: { speed: 0.82, bass: 8,  reverb: 0.25, filter: 12000 },
+            deep:    { speed: 0.72, bass: 12, reverb: 0.35, filter: 6000 },
+            chopped: { speed: 0.88, bass: 9,  reverb: 0.45, filter: 4500 },
+            dreamy:  { speed: 0.78, bass: 6,  reverb: 0.60, filter: 9000 }
+        };
+
+        function applyFx(v) {
+            speedSlider.value = v.speed;   speedSlider.dispatchEvent(new Event('input'));
+            bassSlider.value = v.bass;     bassSlider.dispatchEvent(new Event('input'));
+            reverbSlider.value = v.reverb; reverbSlider.dispatchEvent(new Event('input'));
+            filterSlider.value = v.filter; filterSlider.dispatchEvent(new Event('input'));
+        }
+
+        function randomBetween(min, max, step) {
+            const steps = Math.round((max - min) / step);
+            return +(min + Math.floor(Math.random() * (steps + 1)) * step).toFixed(3);
+        }
+
+        presetSelect.addEventListener('change', (e) => {
+            applyFx(FX_PRESETS[e.target.value]);
+            showToast(`Preset applied: ${e.target.options[e.target.selectedIndex].text}`);
+        });
+
+        surpriseBtn.addEventListener('click', () => {
+            applyFx({
+                speed: randomBetween(0.70, 0.90, 0.01),
+                bass: randomBetween(4, 13, 0.5),
+                reverb: randomBetween(0.15, 0.60, 0.05),
+                filter: randomBetween(3000, 12000, 100)
+            });
+            showToast('Surprise! New random chop & screw settings');
         });
 
         // ---------- Chop pad: repeats a short slice at the playhead while held ----------
